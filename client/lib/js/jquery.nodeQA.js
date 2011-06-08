@@ -78,32 +78,22 @@
             toolbar.get()[0].I = setTimeout(hide, 50);
           }
 
-          function setStatus(toolbar, status) {
-            var target = $(toolbar.get()[0].target);
+          function setStatus(elem, status) {
             switch (status) {
               case 0:
-                  toolbar.addClass('qaUnknown');
-                  toolbar.removeClass('qaRejected');
-                  toolbar.removeClass('qaAccepted');
-                  target.removeClass('qaAccepted');
-                  target.removeClass('qaRejected');
-                  target.addClass('qaUnknown');
+                  elem.addClass('qaUnknown');
+                  elem.removeClass('qaRejected');
+                  elem.removeClass('qaAccepted');
                   break;
               case 1:
-                  toolbar.removeClass('qaUnknown');
-                  toolbar.removeClass('qaRejected');
-                  toolbar.addClass('qaAccepted');
-                  target.addClass('qaAccepted');
-                  target.removeClass('qaRejected');
-                  target.removeClass('qaUnknown');
+                  elem.removeClass('qaUnknown');
+                  elem.removeClass('qaRejected');
+                  elem.addClass('qaAccepted');
                   break;
               case 2:
-                  toolbar.removeClass('qaUnknown');
-                  toolbar.addClass('qaRejected');
-                  toolbar.removeClass('qaAccepted');
-                  target.removeClass('qaAccepted');
-                  target.addClass('qaRejected');
-                  target.removeClass('qaUnknown');
+                  elem.removeClass('qaUnknown');
+                  elem.addClass('qaRejected');
+                  elem.removeClass('qaAccepted');
                   break;
             }
 
@@ -138,7 +128,9 @@
             toolbar.find('.save').click(function() {
                 var target = toolbar.get()[0].target;
                 target.entity.qaStatus = 1;
-                setStatus(toolbar, 1); 
+                setStatus(toolbar, 1);
+                setStatus($(target), 1);
+                setStatus($(target.entity), 1); 
                 return false;
             }); 
 
@@ -147,16 +139,20 @@
                 var target = toolbar.get()[0].target;
                 target.entity.qaStatus = 2;
                 setStatus(toolbar, 2);
+                setStatus($(target), 2);
+                setStatus($(target.entity), 2);
                 return false;
             }); 
           }
           return this.each(function(){
                // Add jQuery methods to the element
-              var editable = $(this);
+              var qable = $(this);
               this.showingOriginalString = false
               this.showQAToolbar = function(){showToolbar(this)}
               this.hideQAToolbar = function(){hideToolbar(this)}
-              editable.hover(function() {
+              //var target = $(toolbar.get()[0].target);
+              setStatus(qable, this.entity.qaStatus);
+              qable.hover(function() {
                   this.entity.hover();
               },function() {
                   this.entity.unhover();

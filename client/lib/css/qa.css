@@ -58,6 +58,17 @@
   background: url("../images/icons.png") 25px 0;
 }
 
+.qaUnknown {
+  background-color: #F2FFCC;
+}
+
+.qaAccepted {
+  background-color: #D9FFCC;
+}
+
+.qaRejected {
+  background-color: #FFD9CC;
+}
 
 .qaToolbar.qaAccepted {
   border-color: green;

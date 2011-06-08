@@ -135,7 +135,8 @@
 
             toolbar.find('.save').click(function(){
                 stopEditing(toolbar);
-                //editable.trigger(options.changeEvent);
+                var target = toolbar.get()[0].target;
+                target.entity.translation = target.entity.ui.find('textarea').html()
                 return false;
             });
 
@@ -143,7 +144,7 @@
                 stopEditing(toolbar);
                 var target = toolbar.get()[0].target;
                 $(target).html(target.prevValue);
-                target.entity.string = target.prevValue;
+                target.entity.translation = target.prevValue;
                 target.entity.ui.find('textarea').text(target.prevValue).parents('tr').removeClass('translated');
                 return false;
             });        

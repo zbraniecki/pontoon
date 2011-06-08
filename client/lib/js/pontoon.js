@@ -349,7 +349,9 @@ var Pontoon = function() {
       $('head', this.client._doc).append(ss);
       
       $(this.client._entities).each(function() {
-        this.node.nodeQA();
+        if (this.string != this.translation) {
+          this.node.nodeQA();
+        }
       });
 
     },
