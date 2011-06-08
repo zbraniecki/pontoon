@@ -2,7 +2,8 @@ var Pontoon = function() {
 
   /* private */
   var PREFIX = 5,
-      _clients = [];
+      _clients = [],
+      mode = 0; // 0 - l10n, 1 - QA
   
   /* public  */
   return {
@@ -173,6 +174,11 @@ var Pontoon = function() {
       $("#send").click(function () {
         self.send();
       });
+
+      $("#mode").click(function () {
+        self.setMode();
+        self.enable();
+      });
     },
   
   
@@ -205,14 +211,23 @@ var Pontoon = function() {
         node: e.node || null, /* HTML Element holding string */
         ui: e.ui || null, /* HTML Element representing string in the main UI */
         id: e.id || null,      
+        qaStatus: e.qaStatus || 0,
         _client: this,
         
         hover: function() {
-          this.node.get(0).showToolbar();
+          if (mode==0) {
+            this.node.get(0).showToolbar();
+          } else {
+            this.node.get(0).showQAToolbar();
+          }
           this.ui.toggleClass('hovered');
         },
         unhover: function() {
-          this.node.get(0).hideToolbar();
+          if (mode==0) {
+            this.node.get(0).hideToolbar();
+          } else {
+            this.node.get(0).hideQAToolbar();
+          }
           this.ui.toggleClass('hovered');
         }
       }
@@ -291,7 +306,6 @@ var Pontoon = function() {
       if (this.isEnchanted()) {
         return this.parseEntities();
       }
-      
       return this.guessEntities();
     },
   
@@ -320,14 +334,72 @@ var Pontoon = function() {
     enableEditing: function() {
       var ss = $('<link rel="stylesheet" href="../../client/lib/css/editable.css">', this.client._doc);
       $('head', this.client._doc).append(ss);
-      
-      this.extractEntities();
-      
       $(this.client._entities).each(function() {
         this.node.editableText();
       });
     },
+
+
+
+    /**
+     * Enable document QA
+     */
+    enableQA: function() {
+      var ss = $('<link rel="stylesheet" href="../../client/lib/css/qa.css">', this.client._doc);
+      $('head', this.client._doc).append(ss);
+      
+      $(this.client._entities).each(function() {
+        this.node.nodeQA();
+      });
+
+    },
+
+    /**
+     * Disable document QA
+     */ 
+    disableQA: function() {
+      $(this.client._doc).find('link[href="../../client/lib/css/qa.css"]').each(function() {
+        $(this).remove();
+      });
+      
+      $(this.client._entities).each(function() {
+        if (this.node.disableNodeQA)
+          this.node.disableNodeQA();
+      });
+      
+      $(this.client._doc).find('.qaToolbar').remove();
+    },
+
+
+    /**
+     * Set Pontoon mode
+     * 0 - Localization
+     * 1 - QA
+     */
+    setMode: function(m) {
+      if (mode==0) {
+        mode = 1;
+      } else {
+        mode = 0;
+      }
+    },
   
+
+    /**
+     * Enables pontoon in the selected mode
+     */
+    enable: function() {
+      switch (mode) {
+        case 0:
+          this.disableQA();
+          this.enableEditing();
+          break;
+        case 1:
+          this.disableEditing();
+          this.enableQA();
+          break;
+      }
+    },
   
   
     /**
@@ -358,8 +430,10 @@ var Pontoon = function() {
 
       _clients.push(this.client);
 
+      this.extractEntities();
+
       // Enable editable text
-      this.enableEditing();
+      this.enable();
   
       // Show and render main UI
       this.attachHandlers();

@@ -152,6 +152,7 @@
             editEl.show();
 
           }
+          
           return this.each(function(){
                // Add jQuery methods to the element
               var editable = $(this);
@@ -187,7 +188,7 @@
               this.txtPrevValue = undefined;
               this.showToolbar = undefined;
               this.hideToolbar = undefined;
-              $(this).unbind('mouseenter mouseleave keypress');
+              editable.unbind('mouseenter mouseleave keypress');
           });
       }
   })();
