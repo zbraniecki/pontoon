@@ -37,14 +37,13 @@
  * ***** END LICENSE BLOCK ***** */
 
 /**
- * Wrapper for gettext(), returns Pontoon-wrapped, localized strings to
+ * Wrapper for gettext(), returns Pontoon-wrapped strings to
  * be handled by the Pontoon client component
  */
-function _w($str) {
-    if (!Pontoon::has_gettext()) return $str;
+function _w($original) {
+    if (!Pontoon::has_gettext()) return $original;
 
-    $translated = _($str);
-    return Pontoon::wrap($translated, $str);
+    return Pontoon::wrap($original);
 }
 
 /**
@@ -71,13 +70,10 @@ class Pontoon
     }
 
     /**
-     * wraps an (already translated) string into Pontoon comments
+     * marks strings for translation with Pontoon comments
      */
-    static function wrap($translated, $msgid) {
-        $wrapped = sprintf('<!--l10n %1$s-->%2$s',
-                       $msgid, $translated);
-
-        return $wrapped;
+    static function wrap($original) {
+        return sprintf('<!--l10n-->%1$s', $original);
     }
 
     /**
@@ -85,17 +81,6 @@ class Pontoon
      * the client that this is a Pontoon enhanced page
      */
     static function header_tags() {
-        echo '<meta name="Pontoon" content="mozilla.org" ip="http://'.$_SERVER['SERVER_ADDR'].':8000/push/"/>'."\n";
-        echo <<<STYLE
-<style type="text/css"><!--
-span.l10n {
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    background: transparent !important;
-}
-span.l10n.hilight { outline: red dashed 2px !important; }
---></style>
-STYLE;
+        if (self::has_gettext()) echo '<meta name="Pontoon" content="Test Pilot" ip="http://'.$_SERVER['SERVER_ADDR'].':8000/push/"/>'."\n";
     }
 }

@@ -3,7 +3,7 @@
 <?php require_once('../../target/php/pontoon.php'); ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<?php Pontoon::header_tags();?>
+	<?php Pontoon::header_tags();?>
 	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 	<title><?= _w('Mozilla Labs Test Pilot')?></title>
 	<link rel="stylesheet" type="text/css" media="all" href="screen.css" />
@@ -68,7 +68,7 @@
 			
 			</div>
 			
-			<div id="footer"><img class="mozLogo" src="images/mozilla-logo.png"><?= _w('Copyright &copy; 2005-2009 Mozilla. All rights reserved.')?> &nbsp; &nbsp; <a href="http://labs.mozilla.com/"><?= _w('Mozilla Labs')?></a> &nbsp; &nbsp; <a href="http://www.mozilla.com/en-US/privacy-policy.html"><?= _w('Privacy Policy')?></a> &nbsp; &nbsp; <a href="http://www.mozilla.com/en-US/about/legal.html"><?= _w('Legal Notices')?></a></div>
+<div id="footer"><img class="mozLogo" src="images/mozilla-logo.png"><?= _w('Copyright &copy; 2005-2009 Mozilla. All rights reserved. &nbsp; &nbsp; <a href="http://labs.mozilla.com/">Mozilla Labs</a> &nbsp; &nbsp; <a href="http://www.mozilla.com/en-US/privacy-policy.html">Privacy Policy</a> &nbsp; &nbsp; <a href="http://www.mozilla.com/en-US/about/legal.html">Legal Notices</a>')?></div>
 
 		
 			

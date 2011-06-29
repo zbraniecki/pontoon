@@ -1,16 +1,12 @@
 var Pontoon = function() {
 
-  /* private */
-  var PREFIX = 5,
-      _clients = [];
-  
   /* public  */
   return {
 
 
 
     /*
-     * Send data to server
+     * Save data to server
      * Pontoon server push expects a POST with the following properties:
      *
      * id - list of msgid strings, the length of id should match the length of value ['Hello World']
@@ -18,66 +14,41 @@ var Pontoon = function() {
      * project - url of the page being localized
      * locale - locale msgstrs are localized too
     */
-    send: function() {
-      var project = ('project' in this.client._meta) ? this.client._meta['project'] : this.client._doc.location.href,
-          lang = $(this.client._ptn).find('input').val(),
-          data = {
-            'id': [], 
-            'value': [],
+    save: function() {
+      // Deep copy: http://api.jquery.com/jQuery.extend
+      var data = jQuery.extend(true, {}, this.client._data);
+
+      $(data.entities).each(function() {
+        delete this.node;
+        delete this.ui;
+        delete this.hover;
+        delete this.unhover;
+      });
+
+      var self = this,
+          url = ('url' in this.client._meta) ? this.client._meta['url'] : 'http://127.0.0.1:8000/push/',
+          project = ('project' in this.client._meta) ? this.client._meta['project'] : this.client._doc.location.href,
+          locale = $(this.client._ptn).find('input').val(),
+          params = {
             'project': project,
-            'locale': lang
-          },
-          entities = [],
-          url = ('url' in this.client._meta) ? this.client._meta['url'] : 'http://127.0.0.1:8000/push/';
-      
-      $(this.client._entities).each(function() {
-        var entity = this,
-            trans = entity.translation ? entity.translation : entity.string;
-        entities.push({
-          'id': entity.string,
-          'value': trans
-        });
-      });
-      
-      $(entities).each(function() {
-        data['id'].push(this.id);
-        if (this.id === this.value) {
-          data['value'].push("");
-        } else {
-          data['value'].push(this.value);
-        }
-      });
-  
+            'locale': locale,
+            // TODO: add, support other browsers - https://developer.mozilla.org/en/Using_JSON_in_Firefox
+            'data': JSON.stringify(data)
+          };
+
       $.ajaxSettings.traditional = true;
-      $.post(url, data, null, "text");
+      $.post(url, params);
     },
   
   
   
     /*
-     * Set language using browser language detection
+     * Do not render HTML code
      *
-     * Browser language cannot be generally obtained via navigator.language
-     * Using HTTP 'Accept-Language' header via external service temporary
-     * Source: http://stackoverflow.com/questions/1043339/javascript-for-detecting-browser-language-preference
-     *
-     * TODO: explore Jetpack options and develop internal solution
+     * string HTML snippet that has to be displayed as code instead of rendered
     */
-    setLanguage: function() {
-      $.ajax({ 
-        url: "http://ajaxhttpheaders.appspot.com", 
-        dataType: 'jsonp', 
-        success: function(headers) {
-          var language = headers['Accept-Language'].substring(0, 2),
-              entry = $('#locale-list .flag.' + language);
-          if (entry.length !== 0) {
-            $('#flag').addClass(language);
-            $('#locale .language').html(entry.next().text());
-          }
-        }
-      }).done(function() {
-        $('#pontoon').slideDown();
-      });
+    doNotRender: function(string) {
+      return string.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     },
 
 
@@ -85,31 +56,65 @@ var Pontoon = function() {
     /**
      * Build source - translation pairs
      */
-    rebuildUIList: function() {
+    rebuildList: function() {
       var self = this,
           list = $(this.client._ptn).find('#entitylist').empty()
           // tables still need 'cellspacing="0"' in the markup
           // http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/
-          .append('<table cellpadding="0" cellspacing="0" border="0"><thead><tr><th>Source</th><th>Translation</th></tr></thead><tbody></tbody></table>');
+          .append(
+            '<table cellpadding="0" cellspacing="0" border="0">' + 
+              '<thead><tr><th>Source</th><th>Translation</th></tr></thead>' + 
+              '<tbody></tbody>' + 
+            '</table>');
   
       // Render
-      $(this.client._entities).each(function() {
-        var tr = $('<tr><td class="source"><p>' + this.txtString + '</p><ul class="tools"><li title="Copy original string to translation" class="copy"></li><li title="Machine translation by Google Translate" class="auto-translate"></li><li title="Comment" class="comment"></li></ul></td><td class="translation"><div class="suggestions"><a href="#translation" class="translation active">Translation</a><a href="#translation-memory" class="tm">Translation memory</a><a href="#other-users" class="users">Other users</a><a href="#other-locales" class="locales">Other locales</a></div><textarea>' + (this.translation || '') + '</textarea></td></tr>', self.client._ptn);
+      $(this.client._data.entities).each(function() {
+        var tr = $('<tr' + (this.translation ? ' class="translated"' : '') + '>' + 
+        '<td class="source">' + 
+          '<p>' + self.doNotRender(this.original) + '</p>' + 
+          '<ul class="tools">' + 
+            '<li title="Copy original string to translation" class="copy"></li>' + 
+            '<li title="Machine translation by Google Translate" class="auto-translate"></li>' + 
+            (this.comment ? '<li title="' + this.comment + '" class="comment"></li>' : '') + 
+          '</ul>' + 
+        '</td>' +
+        '<td class="translation">' + 
+          '<div class="suggestions">' + 
+            '<a href="#translation" class="translation active">Translation</a>' + 
+            '<a href="#translation-memory" class="tm">Translation memory</a>' + 
+            '<a href="#other-users" class="users">Other users</a>' + 
+            '<a href="#other-locales" class="locales">Other locales</a>' + 
+          '</div>' + 
+          '<textarea>' + (this.translation || '') + '</textarea>' + 
+        '</td></tr>', self.client._ptn);
             
         tr.get(0).entity = this;
-        this.node.get(0).entity = this;
+        if (this.node) { // For entities not found on the website
+          this.node.get(0).entity = this;
+        }
         this.ui = tr;
   
         list.find('tbody').append(tr);
       });
   
-      // Event handlers
-      $("#pontoon tr").hover(function() {
+      // Main entity list handlers
+      $("#main tr").hover(function() {
         this.entity.hover();
       }, function() {
         this.entity.unhover();
       }).click(function() {
         $(self.client._doc).find('.editableToolbar > .edit').click();
+      });
+  
+      // Copy original string to translation
+      $("#main .copy").click(function(e) {
+      	e.stopPropagation();
+        var toolbar = $(self.client._doc).find('.editableToolbar');
+        toolbar.find('.edit').click().end();
+
+      	var entity = $(this).parents('tr').get(0).entity;
+      	$(entity.node).html(entity.original);
+        toolbar.find('.save').click();
       });
   
       this.updateProgress();
@@ -121,8 +126,8 @@ var Pontoon = function() {
      * Update progress indicator and value
      */
     updateProgress: function() {
-      var all = $("#pontoon tbody tr").length,
-          translated = $("#pontoon tbody tr.translated").length;
+      var all = $("#main tbody tr").length,
+          translated = $("#main tbody tr.translated").length;
       $('#progress span').width(Math.round(translated*100 / all) + '%');
       $('#progress-value').html(translated + '/' + all);
     },
@@ -138,7 +143,7 @@ var Pontoon = function() {
       // Update entities and progress when saved
       $(".editableToolbar > .save", this.client._doc).click(function() {
         var element = $(this).parent().get(0).target;
-        self.updateEntities(element);
+        self.updateEntity(element);
         self.updateProgress();
       });
   
@@ -149,30 +154,72 @@ var Pontoon = function() {
   
       // Open/close Pontoon UI
       $('#switch').unbind("click.pontoon").bind("click.pontoon", function() {
-        if ($('#pontoon').is('.opened')) {
+        if ($('#main').is('.opened')) {
           $('#entitylist').height(0);
         } else {
           $('#entitylist').height(300);
         }
-        $('#source').height($(document).height() - $('#pontoon').height());
-        $('#pontoon').toggleClass('opened');
+        $('#source').height($(document).height() - $('#main').height());
+        $('#main').toggleClass('opened');
       });
   
-      // Locale selector
-      $('#locale').unbind("click.pontoon").bind("click.pontoon", function() {
-        $('#locale-list').css("left", $("#flag").position().left - 12).toggle();
+      // Selector handler
+      $('.selector').unbind("click.pontoon").bind("click.pontoon", function(e) {
+        $(this).siblings('.menu').toggle();
         $(this).toggleClass('opened');
       });
-      $('#locale-list li:not(".add")').unbind("click.pontoon").bind("click.pontoon", function() {
-        $('#flag').attr("class", $(this).find('span').attr("class"));
-        $('#locale .language').html($(this).find('.language').html());
-        $('#locale').click();
+
+      // Locale selector
+      $('.locale .menu li:not(".add")').unbind("click.pontoon").bind("click.pontoon", function() {
+        $('.locale .selector .flag').attr("class", $(this).find('span').attr("class"));
+        $('.locale .selector .language').html($(this).find('.language').html());
+        $('.locale .selector').click();
       });
+      
+      // Authentication
+      $('#authentication-menu .restricted .go').unbind("click.pontoon").bind("click.pontoon", function() {
+        var author = $('#nickname').val() || $('#email').val();
+          $('#authentication .selector').click();
+        if (author) {
+          $('#authentication .author').html(author).toggleClass('authenticated');
+          $('#authentication-menu, #save-menu').toggleClass('menu');
+        }
+      });
+
+      // Authentication switch
+      $('#authentication-menu .switch').unbind("click.pontoon").bind("click.pontoon", function() {
+        $('#authentication-menu')
+          .find('.wrapper').toggle().end()
+          .find('#password').toggle();
+      });
+
+      // Save menu
+      $('#save-menu').find('.sign-out').unbind("click.pontoon").bind("click.pontoon", function() {
+        $('#authentication .selector').click();
+        $('#authentication .author').html('Sign in').toggleClass('authenticated');
+        $('#authentication-menu, #save-menu').toggleClass('menu');
+      }).end().find('.server').unbind("click.pontoon").bind("click.pontoon", function() {
+        $('#authentication .selector').click();
+        self.save();
+      });
+
+    },
   
-      // Send changes to server
-      $("#send").click(function () {
-        self.send();
+  
+  
+    /**
+     * Show and render main UI
+     * Enable editable text
+     */
+    renderTools: function() {
+      $(this.client._data.entities).each(function() {
+        if (this.node) { // For entities not found on the website
+          this.node.editableText();
+        }
       });
+      this.attachHandlers();
+      this.rebuildList();
+      $('#main').slideDown();
     },
   
   
@@ -180,160 +227,140 @@ var Pontoon = function() {
     /**
      * Update entity and main UI
      * 
-     * element HTML Element which contains html10n nodes
+     * element HTML Element which contains l10n entities
      */
-    updateEntities: function(element) {
+    updateEntity: function(element) {
       var entity = element.entity,
           clone = $(element).clone();
   
       entity.translation = $(clone).html();
-      entity.txtTranslation = $(clone).text();
       entity.ui.find('textarea').text(entity.translation).parents('tr').addClass('translated');
     },
   
   
   
     /**
-     * Create entity object
+     * Extend entity object
+     * 
+     * e Temporary entity object
      */
-    createEntity: function(e) {
-      var entity = {
-        string: e.string || null, /* Original string used in PO file (may include HTML markup) */
-        txtString: e.txtString || null, /* Original string used in UI (text only), derived from string */
-        translation: e.translation || null, /* Translated string used in PO file (may include HTML markup) */
-        txtTranslation: e.txtTranslation || null, /* Translated string used in UI (text only), derived from translation */
-        node: e.node || null, /* HTML Element holding string */
-        ui: e.ui || null, /* HTML Element representing string in the main UI */
-        id: e.id || null,      
-        _client: this,
-        
-        hover: function() {
-          this.node.get(0).showToolbar();
-          this.ui.toggleClass('hovered');
-        },
-        unhover: function() {
-          this.node.get(0).hideToolbar();
-          this.ui.toggleClass('hovered');
-        }
-      }
-      
-      this.client._entities.push(entity);
+    extendEntity: function(e) {
+      e.original = e.original || ""; /* Original string */
+      e.translation = e.translation || ""; /* Translated string */
+      e.comment = e.comment || ""; /* Comment for localizers */
+      e.node = e.node || null; /* HTML Element holding string */
+      e.ui = e.ui || null; /* HTML Element representing string in the main UI */
+
+      e.hover = function() {
+        this.node.get(0).showToolbar();
+        this.ui.toggleClass('hovered');
+      };
+      e.unhover = function() {
+        this.node.get(0).hideToolbar();
+        this.ui.toggleClass('hovered');
+      };
     },
   
   
   
     /**
      * Extract entities from the document, not prepared for working with Pontoon
+     * 
      * Create entity object from every non-empty text node
+     * Exclude nodes from special tags, e.g. <script> and <link>
+     * Skip nodes already included in parent nodes
+     * Add temporary pontoon-entity class to prevent duplicate entities when guessing
      */ 
     guessEntities: function() {
       var self = this;
+      this.client._data.entities = [];
   
       $(this.client._doc).find(':not("script, style")').contents().each(function() {
-        if (this.nodeType === Node.TEXT_NODE && $.trim(this.nodeValue).length > 0) {
-          entity = {};
-          entity.string = entity.txtString = entity.translation = entity.txtTranslation = entity.id = this.nodeValue;
+        if (this.nodeType === Node.TEXT_NODE && $.trim(this.nodeValue).length > 0 && $(this).parents(".pontoon-entity").length === 0) {
+          var entity = {};
+          entity.original = $(this).parent().html();
           entity.node = $(this).parent();
-          self.createEntity(entity);
-  
-          $(this).parent().attr("data-l10n", entity.string);
+          self.extendEntity(entity);
+          self.client._data.entities.push(entity);
+          $(this).parent().addClass("pontoon-entity");
         }
-      });    
+      });
+      
+      $(".pontoon-entity").removeClass("pontoon-entity");
+      self.renderTools();
     },
   
   
   
     /**
-     * Extract all gettext msgid and msgstr from the document
-     * Strings are prepended with l10n comment nodes
-     * Example: <!--l10n Hello World-->Hallo Welt
+     * Get data from external meta file: original, translation, comment, suggestions...
+     * Match with each string in the document, which is prepended with l10n comment nodes
+     * Example: <!--l10n-->Hello World
      *
-     * Create entity object from comment and the text node that follows
-     * Move comment node contents to the parent's element data-l10n attribute
+     * Create entity objects
      * Remove comment nodes
      */
-    parseEntities: function() {
-      var self = this;
-  
-      $(this.client._doc).find('*').contents().each(function() {
-        if (this.nodeType === Node.COMMENT_NODE && this.nodeValue.indexOf('l10n ') === 0) {
-          entity = {};
-          entity.string = entity.txtString = entity.id = this.nodeValue.substring(PREFIX);
-          entity.translation = entity.txtTranslation = $(this.nextSibling).text();
-          entity.node = $(this).parent();
-          self.createEntity(entity);
-          
-          $(this).parent().attr("data-l10n", entity.string);
-          $(this).remove();
-        }
+    getEntities: function() {
+      var self = this,
+          prefix = 'l10n',
+          counter = 1, /* TODO: use IDs or XPath */
+          parent = null;
+
+      $.getJSON($("#source").attr("src") + "/pontoon/" + this.client._locale + ".json").success(function(data) {
+      	self.client._data = data;
+      	var entities = self.client._data.entities;
+      	
+        $(self.client._doc).find('*').contents().each(function() {
+          if (this.nodeType === Node.COMMENT_NODE && this.nodeValue.indexOf(prefix) === 0) {
+            var entity = entities[counter],
+                translation = entity.translation;
+            
+            parent = $(this).parent();
+            $(this).remove();
+            if (translation.length > 0) {
+              parent.html(translation);
+            }
+
+            entity.node = parent;
+            self.extendEntity(entity);
+            counter++;
+          }
+        });
+        self.renderTools();
       });
     },
   
   
-  
-    /**
-     * Determine if the current page is prepared for working with Pontoon
-     */ 
-    isEnchanted: function() {
-      if (this.client._enchanted === null) {
-        this.client._enchanted = ($(this.client._doc).find('head > meta[name=Pontoon]').length > 0);
-      }
-      
-      return this.client._enchanted;
-    },
-  
-  
-  
+
     /**
      * Extract entities from the document
+     * Determine if the current page is prepared for working with Pontoon
      */ 
     extractEntities: function() {
-      if (this.isEnchanted()) {
-        return this.parseEntities();
+      var meta = $(this.client._doc).find('head > meta[name=Pontoon]');
+      if (meta.length > 0) {
+        if (meta.attr('content')) {
+          this.client._meta['project'] = meta.attr('content');
+        }
+        if (meta.attr('ip')) {
+          this.client._meta['url'] = meta.attr('ip');
+        }
+        return this.getEntities();
       }
-      
+
+      // Read meta values
       return this.guessEntities();
     },
   
   
   
     /**
-     * Disable document editing
-     */ 
-    disableEditing: function() {
-      $(this.client._doc).find('link[href="../../client/lib/css/editable.css"]').each(function() {
-        $(this).remove();
-      });
-      
-      $(this.client._entities).each(function() {
-        this.node.disableEditableText();
-      });
-      
-      $(this.client._doc).find('.editableToolbar').remove();
-    },
-  
-  
-  
-    /**
-     * Enable document editing
-     */ 
-    enableEditing: function() {
-      var ss = $('<link rel="stylesheet" href="../../client/lib/css/editable.css">', this.client._doc);
-      $('head', this.client._doc).append(ss);
-      
-      this.extractEntities();
-      
-      $(this.client._entities).each(function() {
-        this.node.editableText();
-      });
-    },
-  
-  
-  
-    /**
      * Initialize Pontoon Client
+     *
+     * doc Website document object
+     * ptn Pontoon document object
      */
-    init: function(doc, ptn) {
+    init: function(doc, ptn, locale) {
       if (!doc) {
         throw "Document handler required";
       }
@@ -342,29 +369,15 @@ var Pontoon = function() {
       this.client = {
         _doc: doc,
         _ptn: ptn,
-        _entities: [],
+        _locale: locale,
         _meta: {},
-        _enchanted: null
+        _data: {}
       };
       
-      // Read meta values
-      var meta = $(doc).find('head > meta[name=Pontoon]');
-      if (meta.attr('content')) {
-        this.client._meta['project'] = meta.attr('content');
-      }
-      if (meta.attr('ip')) {
-        this.client._meta['url'] = meta.attr('ip');
-      }
-
-      _clients.push(this.client);
-
-      // Enable editable text
-      this.enableEditing();
-  
-      // Show and render main UI
-      this.attachHandlers();
-      this.rebuildUIList();
-      this.setLanguage();
+      // Enable document editing
+      var ss = $('<link rel="stylesheet" href="../../client/lib/css/editable.css">', doc);
+      $('head', doc).append(ss);      
+      this.extractEntities();      
     }
 
   };
