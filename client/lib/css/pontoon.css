@@ -216,11 +216,6 @@
   float: right;
 }
 
-#pontoon #mode {
-  float: right;
-  margin-right: 10px;
-}
-
 #pontoon #switch {
   background: url('../images/arrow-up.png') no-repeat;
   display: inline-block;
