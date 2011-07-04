@@ -63,7 +63,7 @@ var Pontoon = function() {
           // http://meyerweb.com/eric/thoughts/2007/05/01/reset-reloaded/
           .append(
             '<table cellpadding="0" cellspacing="0" border="0">' + 
-              '<thead><tr><th>Source</th><th>Translation</th></tr></thead>' + 
+              '<thead><tr><th>Source</th><th class="tools"></th><th>Translation</th></tr></thead>' + 
               '<tbody></tbody>' + 
             '</table>');
   
@@ -72,7 +72,9 @@ var Pontoon = function() {
         var tr = $('<tr' + (this.translation ? ' class="translated"' : '') + '>' + 
         '<td class="source">' + 
           '<p>' + self.doNotRender(this.original) + '</p>' + 
-          '<ul class="tools">' + 
+        '</td>' +
+        '<td class="tools">' +
+          '<ul>' + 
             '<li title="Copy original string to translation" class="copy"></li>' + 
             '<li title="Machine translation by Google Translate" class="auto-translate"></li>' + 
             (this.comment ? '<li title="' + this.comment + '" class="comment"></li>' : '') + 
@@ -162,32 +164,26 @@ var Pontoon = function() {
         $('#source').height($(document).height() - $('#main').height());
         $('#main').toggleClass('opened');
       });
-  
-      // Selector handler
-      $('.selector').unbind("click.pontoon").bind("click.pontoon", function(e) {
-        $(this).siblings('.menu').toggle();
-        $(this).toggleClass('opened');
-      });
 
-      // Locale selector
-      $('.locale .menu li:not(".add")').unbind("click.pontoon").bind("click.pontoon", function() {
-        $('.locale .selector .flag').attr("class", $(this).find('span').attr("class"));
-        $('.locale .selector .language').html($(this).find('.language').html());
-        $('.locale .selector').click();
-      });
-      
       // Authentication
       $('#authentication-menu .restricted .go').unbind("click.pontoon").bind("click.pontoon", function() {
         var author = $('#nickname').val() || $('#email').val();
-          $('#authentication .selector').click();
+        $('#authentication .selector').click();
         if (author) {
           $('#authentication .author').html(author).toggleClass('authenticated');
           $('#authentication-menu, #save-menu').toggleClass('menu');
         }
       });
+      $('#nickname').unbind("keydown.pontoon").bind("keydown.pontoon", function(e) {
+        var key = e.keyCode || e.which;
+        if (key === 13) { // Enter
+          $('#authentication-menu .restricted .go').click();
+          return false;
+        }
+      });
 
-      // Authentication switch
-      $('#authentication-menu .switch').unbind("click.pontoon").bind("click.pontoon", function() {
+      // Authentication toggle
+      $('#authentication-menu .toggle').unbind("click.pontoon").bind("click.pontoon", function() {
         $('#authentication-menu')
           .find('.wrapper').toggle().end()
           .find('#password').toggle();
@@ -359,6 +355,7 @@ var Pontoon = function() {
      *
      * doc Website document object
      * ptn Pontoon document object
+     * locale ISO 639-1 language code of the language website is localized to
      */
     init: function(doc, ptn, locale) {
       if (!doc) {
@@ -378,6 +375,95 @@ var Pontoon = function() {
       var ss = $('<link rel="stylesheet" href="../../client/lib/css/editable.css">', doc);
       $('head', doc).append(ss);      
       this.extractEntities();      
+    },
+
+
+
+    /**
+     * Common functions used in both, client specific code and Pontoon library
+     */
+    common: function() {
+
+      // Show/hide menu on click
+      $('.selector').unbind("click.pontoon").bind("click.pontoon", function(e) {
+        if (!$(this).siblings('.menu').is(':visible')) {
+          e.stopPropagation();
+          $('.menu').hide();
+          $('#iframe-cover').hide(); // iframe fix
+          $('.select').removeClass('opened');
+          $(this).siblings('.menu').show();
+          $('#iframe-cover').show().height($('#source').height()); // iframe fix
+          $(this).parents('.select').addClass('opened');
+        }
+      });
+
+      // Hide menus on click outside
+      $('html').unbind("click.pontoon").bind("click.pontoon", function() {
+        $('.menu').hide();
+        $('#iframe-cover').hide(); // iframe fix
+        $('.select').removeClass('opened');
+      });
+      $('.menu').unbind("click.pontoon").bind("click.pontoon", function(e) {
+        e.stopPropagation();
+      });
+    
+      // Start new project with current website url and locale
+      $('.locale .confirm, .locale .menu li:not(".add")').unbind("click.pontoon").bind("click.pontoon", function() {
+        // TODO: url and locale validation
+        window.location = "?url=" + $('.url:visible').val() + "&locale=" + $(this).find('.flag').attr('class').split(' ')[1];
+      });
+      $('.url').unbind("keydown.pontoon").bind("keydown.pontoon", function(e) {
+        var key = e.keyCode || e.which;
+        if (key === 13) { // Enter
+          $('.locale .confirm:visible').click();
+          return false;
+        }
+      });
+
+      // Menu hover
+      $('.menu li').live('hover', function() {
+        $('.menu li.hover').removeClass('hover');
+        $(this).toggleClass('hover');
+      });
+
+      // Use arrow keys to move around menu, confirm with enter, close with escape
+      $('html').unbind("keydown.pontoon").bind("keydown.pontoon", function(e) {
+        if ($('.menu').is(':visible')) {
+          var key = e.keyCode || e.which,
+              menu = $('.menu:visible'),
+              hovered = menu.find('li.hover');
+      	      
+          if (key === 38) { // up arrow
+            if (hovered.length === 0 || menu.find('li:first').is('.hover')) {
+              menu.find('li.hover').removeClass('hover');
+              menu.find('li:last').addClass('hover');
+            } else {
+              menu.find('li.hover').removeClass('hover').prev().addClass('hover');
+            }
+            return false;
+          }
+          
+          if (key === 40) { // down arrow
+            if (hovered.length === 0 || menu.find('li:last').is('.hover')) {
+              menu.find('li.hover').removeClass('hover');
+              menu.find('li:first').addClass('hover');
+            } else {
+              menu.find('li.hover').removeClass('hover').next().addClass('hover');
+            }
+            return false;
+          }
+
+          if (key === 13) { // Enter
+            menu.find('li.hover').click();
+            return false;
+          }
+
+          if (key === 27) { // Escape
+            menu.siblings('.selector').click();
+            return false;
+          }
+        }
+      });
     }
 
   };
