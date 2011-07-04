@@ -61,7 +61,6 @@
               }           
               var toolbarNode = toolbar.get()[0]
               if(toolbarNode.I) {
-                alert(1);
                 clearTimeout(toolbarNode.I)
                 toolbarNode.I = null;
               }
@@ -83,7 +82,6 @@
             if ($(target).attr('contentEditable')=='true')
               return;
             function hide() {
-              alert('hiding');
               if (target) {
                 target.blur();
                 stopEditing(toolbar);
