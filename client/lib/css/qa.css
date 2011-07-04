@@ -1,0 +1,101 @@
+.hovered {
+  box-shadow: 0 0 5px #444444;
+  -moz-box-shadow: 0 0 5px #444444;
+  -webkit-box-shadow: 0 0 5px #444444;
+}
+
+.editableText {
+  min-height: 20px;
+}
+
+.editableText:hover {
+  box-shadow: 0 0 5px #444444;
+  -moz-box-shadow: 0 0 5px #444444;
+  -webkit-box-shadow: 0 0 5px #444444;
+}
+
+.qaToolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  background-color: #EEEEEE;
+  border-top: 1px solid #AAAAAA;
+  border-left: 1px solid #AAAAAA;
+  border-right: 1px solid #AAAAAA;
+  border-top-right-radius: 0.2em;
+  border-top-left-radius: 0.2em;
+  -moz-border-radius-topright: 0.2em;
+  -moz-border-radius-topleft: 0.2em;
+  -webkit-border-top-right-radius: 0.2em;
+  -webkit-border-top-left-radius: 0.2em;
+  z-index: 100;
+}
+
+.qaToolbar:hover + * {
+  box-shadow: 0 0 5px #444444;
+  -moz-box-shadow: 0 0 5px #444444;
+  -webkit-box-shadow: 0 0 5px #444444;
+}
+
+.qaToolbar a {
+  display: block;
+  width: 17px;
+  height: 15px;
+  float: left;
+  margin: 2px;
+}
+
+.qaToolbar .edit {    
+  background: url("../images/icons.png");
+}
+
+.qaToolbar .save {
+  background: url("../images/icons.png") -16px 0;
+}
+
+.qaToolbar .cancel {
+  background: url("../images/icons.png") 25px 0;
+}
+
+.qaUnknown {
+  background-color: #F2FFCC;
+}
+
+.qaAccepted {
+  background-color: #D9FFCC;
+}
+
+.qaRejected {
+  background-color: #FFD9CC;
+}
+
+.qaToolbar.qaAccepted {
+  border-color: green;
+}
+
+.qaToolbar.qaRejected {
+  border-color: red;
+}
+
+.qaToolbar.qaUnknown {
+  border-color: yellow;
+}
+
+.hovered.qaAccepted {
+  box-shadow: 0 0 5px green;
+  -moz-box-shadow: 0 0 5px green;
+  -webkit-box-shadow: 0 0 5px green;
+}
+
+.hovered.qaRejected {
+  box-shadow: 0 0 5px red;
+  -moz-box-shadow: 0 0 5px red;
+  -webkit-box-shadow: 0 0 5px red;
+}
+
+.hovered.qaUnknown {
+  box-shadow: 0 0 5px yellow;
+  -moz-box-shadow: 0 0 5px yellow;
+  -webkit-box-shadow: 0 0 5px yellow;
+}
