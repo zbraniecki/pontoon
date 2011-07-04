@@ -60,7 +60,8 @@
                 toolbar.css('top', top-20+'px')
               }           
               var toolbarNode = toolbar.get()[0]
-              if(toolbarNode.I!==null) {
+              if(toolbarNode.I) {
+                alert(1);
                 clearTimeout(toolbarNode.I)
                 toolbarNode.I = null;
               }
@@ -82,6 +83,7 @@
             if ($(target).attr('contentEditable')=='true')
               return;
             function hide() {
+              alert('hiding');
               if (target) {
                 target.blur();
                 stopEditing(toolbar);
@@ -135,7 +137,8 @@
 
             toolbar.find('.save').click(function(){
                 stopEditing(toolbar);
-                //editable.trigger(options.changeEvent);
+                var target = toolbar.get()[0].target;
+                target.entity.translation = target.entity.ui.find('textarea').html()
                 return false;
             });
 
@@ -143,7 +146,7 @@
                 stopEditing(toolbar);
                 var target = toolbar.get()[0].target;
                 $(target).html(target.prevValue);
-                target.entity.string = target.prevValue;
+                target.entity.translation = target.prevValue;
                 target.entity.ui.find('textarea').text(target.prevValue).parents('tr').removeClass('translated');
                 return false;
             });        
@@ -152,6 +155,7 @@
             editEl.show();
 
           }
+          
           return this.each(function(){
                // Add jQuery methods to the element
               var editable = $(this);
@@ -187,7 +191,7 @@
               this.txtPrevValue = undefined;
               this.showToolbar = undefined;
               this.hideToolbar = undefined;
-              $(this).unbind('mouseenter mouseleave keypress');
+              editable.unbind('mouseenter mouseleave keypress');
           });
       }
   })();

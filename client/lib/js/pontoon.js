@@ -1,5 +1,7 @@
 var Pontoon = function() {
 
+  var mode = 0; // 0 - l10n, 1 - QA
+
   /* public  */
   return {
 
@@ -199,6 +201,9 @@ var Pontoon = function() {
         self.save();
       });
 
+      $("#mode").click(function () {
+        self.setMode();
+      });
     },
   
   
@@ -208,11 +213,7 @@ var Pontoon = function() {
      * Enable editable text
      */
     renderTools: function() {
-      $(this.client._data.entities).each(function() {
-        if (this.node) { // For entities not found on the website
-          this.node.editableText();
-        }
-      });
+      this.setMode(0);
       this.attachHandlers();
       this.rebuildList();
       $('#main').slideDown();
@@ -241,18 +242,28 @@ var Pontoon = function() {
      * e Temporary entity object
      */
     extendEntity: function(e) {
+      alert('extending entities')
       e.original = e.original || ""; /* Original string */
       e.translation = e.translation || ""; /* Translated string */
       e.comment = e.comment || ""; /* Comment for localizers */
       e.node = e.node || null; /* HTML Element holding string */
       e.ui = e.ui || null; /* HTML Element representing string in the main UI */
+      e.qaStatus = e.qaStatus || 0;
 
       e.hover = function() {
-        this.node.get(0).showToolbar();
+        if (mode==0) {
+          this.node.get(0).showToolbar();
+        } else {
+          this.node.get(0).showQAToolbar();
+        }
         this.ui.toggleClass('hovered');
       };
       e.unhover = function() {
-        this.node.get(0).hideToolbar();
+        if (mode==0) {
+          this.node.get(0).hideToolbar();
+        } else {
+          this.node.get(0).hideQAToolbar();
+        }
         this.ui.toggleClass('hovered');
       };
     },
@@ -348,7 +359,55 @@ var Pontoon = function() {
       return this.guessEntities();
     },
   
-  
+    /**
+     * Set Pontoon mode
+     * 0 - Localization
+     * 1 - QA
+     */
+    setMode: function(m,n) {
+      if (m===n) m = mode==0?1:0;
+      if (m==0) {
+        mode = 0;
+      } else {
+        mode = 1;
+      }
+      if (mode == 0) {
+        $(this.client._entities).each(function() {
+          if (this.node.disableNodeQA)
+            this.node.disableNodeQA();
+        });
+
+        $(this.client._doc).find('.qaToolbar').remove();
+
+        $(this.client._doc).find('link[href="../../client/lib/css/qa.css"]').each(function() {
+          $(this).remove();
+        });
+        var ss = $('<link rel="stylesheet" href="../../client/lib/css/editable.css">', this.client._doc);
+        $('head', this.client._doc).append(ss);   
+        $(this.client._data.entities).each(function() {
+          if (this.node) { // For entities not found on the website
+            this.node.editableText();
+          }
+        });
+      } else {
+        $(this.client._data.entities).each(function() {
+          if (this.node) { // For entities not found on the website
+            this.node.disableEditableText();
+          }
+        });
+        $(this.client._doc).find('.editableToolbar').remove();
+        $(this.client._doc).find('link[href="../../client/lib/css/editable.css"]').each(function() {
+          $(this).remove();
+        });
+        var ss = $('<link rel="stylesheet" href="../../client/lib/css/qa.css">', this.client._doc);
+        $('head', this.client._doc).append(ss);   
+        $(this.client._data.entities).each(function() {
+          if (this.string != this.translation) {
+            this.node.nodeQA();
+          }
+        });
+      }
+    }, 
   
     /**
      * Initialize Pontoon Client
@@ -372,8 +431,6 @@ var Pontoon = function() {
       };
       
       // Enable document editing
-      var ss = $('<link rel="stylesheet" href="../../client/lib/css/editable.css">', doc);
-      $('head', doc).append(ss);      
       this.extractEntities();      
     },
 
