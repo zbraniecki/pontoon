@@ -242,7 +242,6 @@ var Pontoon = function() {
      * e Temporary entity object
      */
     extendEntity: function(e) {
-      alert('extending entities')
       e.original = e.original || ""; /* Original string */
       e.translation = e.translation || ""; /* Translated string */
       e.comment = e.comment || ""; /* Comment for localizers */
@@ -366,13 +365,14 @@ var Pontoon = function() {
      */
     setMode: function(m,n) {
       if (m===n) m = mode==0?1:0;
+      
       if (m==0) {
         mode = 0;
       } else {
         mode = 1;
       }
       if (mode == 0) {
-        $(this.client._entities).each(function() {
+        $(this.client._data.entities).each(function() {
           if (this.node.disableNodeQA)
             this.node.disableNodeQA();
         });
@@ -402,7 +402,7 @@ var Pontoon = function() {
         var ss = $('<link rel="stylesheet" href="../../client/lib/css/qa.css">', this.client._doc);
         $('head', this.client._doc).append(ss);   
         $(this.client._data.entities).each(function() {
-          if (this.string != this.translation) {
+          if (this.translation && this.original != this.translation) {
             this.node.nodeQA();
           }
         });

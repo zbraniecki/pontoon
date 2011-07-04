@@ -114,13 +114,10 @@
 
             toolbar.find('.edit').click(function() {
                 var target = toolbar.get()[0].target;
-                if (target.showingOriginalString == false) {
-                  target.showingOriginalString = true
-                  $(target).html(target.entity.string);
-                } else {
-                  target.showingOriginalString = false
-                  $(target).html(target.entity.translation);              
-                }
+                target.entity.qaStatus = 0;
+                setStatus(toolbar, 0);
+                setStatus($(target), 0);
+                setStatus($(target.entity), 0); 
                 return false;
             });   
 
